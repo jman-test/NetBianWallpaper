@@ -1,0 +1,80 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+
+# ---------- 虚拟环境 ----------
+.venv/
+venv/
+env/
+ENV/
+
+# ---------- PyInstaller 构建产物 ----------
+build/
+dist/
+build_fluent/
+dist_fluent/
+*.manifest
+*.spec.bak
+
+# ---------- 运行时生成 ----------
+cache/
+settings.json
+*.log
+
+# ---------- 开发期调试/诊断脚本 ----------
+diag_*.py
+_diag_*.py
+_probe_*.py
+_exp_*.py
+_verify_*.py
+verify_*.py
+smoke_*.py
+_smoke_*.py
+test_*.py
+debug_*.py
+e2e_*.py
+shot_*.py
+dns_check.py
+multi_verify.py
+_C_*.py
+_capture_*.py
+_enum_*.py
+_fx_*.py
+_rm_*.py
+_final_*.py
+_iso_*.py
+_oldexe_*.py
+_pxmap*.py
+_screen_*.py
+_whois.py
+_2_*.py
+*.bat
+*.ps1
+
+# ---------- 开发期截图（项目唯一正式图片为 app.ico，其余均为临时截图） ----------
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.gif
+
+# ---------- 本地工作区数据 ----------
+.workbuddy/
+
+# ---------- IDE / 编辑器 ----------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# ---------- 操作系统 ----------
+.DS_Store
+Thumbs.db
+Desktop.ini
