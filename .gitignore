@@ -55,12 +55,16 @@ _2_*.py
 *.bat
 *.ps1
 
-# ---------- 开发期截图（项目唯一正式图片为 app.ico，其余均为临时截图） ----------
+# ---------- 开发期截图（正式截图保留在 screenshots/，其余均为临时截图） ----------
 *.png
 *.jpg
 *.jpeg
 *.bmp
 *.gif
+# 正式 README 截图（保留）
+!screenshots/
+!screenshots/*.png
+!screenshots/*.jpg
 
 # ---------- 本地工作区数据 ----------
 .workbuddy/
