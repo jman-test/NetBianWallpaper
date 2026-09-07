@@ -2,6 +2,14 @@
 
 一个 Windows 桌面壁纸浏览器，界面采用 **WinUI 3 / Fluent 风格**，数据来源于 [彼岸图网](https://www.netbian.com)。支持分类浏览、搜索、大图预览、一键下载与设为桌面壁纸，并提供磨砂玻璃、自动配色、定时切换等个性化能力。
 
+<p align="left">
+  <a href="https://github.com/jman-test/NetBianWallpaper/releases"><img src="https://img.shields.io/github/v/release/jman-test/NetBianWallpaper?style=flat-square&label=Release&color=blue" alt="release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/jman-test/NetBianWallpaper?style=flat-square&color=green" alt="license"></a>
+  <a href="https://github.com/jman-test/NetBianWallpaper"><img src="https://img.shields.io/github/stars/jman-test/NetBianWallpaper?style=flat-square&color=yellow" alt="stars"></a>
+  <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square" alt="platform">
+  <img src="https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="python">
+</p>
+
 > 版本：V1.0 ｜ 作者：你的大大大魔头 ｜ 数据来源：彼岸图网（鸣谢）
 
 ---
@@ -90,6 +98,18 @@ NetBianWallpaper/
 └── dist/
     └── NetBianWallpaper.exe  # 打包产物
 ```
+
+---
+
+## 🤝 支持与贡献
+
+如果你喜欢这个项目，欢迎：
+
+- ⭐ 点一个 **Star**，让更多人看到它；
+- 🐛 通过 [Issue](https://github.com/jman-test/NetBianWallpaper/issues) 反馈问题或提建议；
+- 🛠 提交 [Pull Request](https://github.com/jman-test/NetBianWallpaper/pulls) 贡献代码。
+
+详细的贡献流程、环境搭建与版本发布规范见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ---
 

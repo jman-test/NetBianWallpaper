@@ -5,6 +5,10 @@
 技术：PySide6 + PySide6-Fluent-Widgets (qfluentwidgets) + requests
 """
 
+# 版本号（单一来源：修改 APP_VERSION 即可，界面显示与 Release tag 均由此派生）
+APP_VERSION = "1.0.0"
+APP_VERSION_DISPLAY = "V" + APP_VERSION.rsplit(".", 1)[0]  # 如 "V1.0"
+
 import os
 import re
 import sys
@@ -1607,7 +1611,7 @@ class _AboutBadge(QWidget):
 class _AboutPill(QWidget):
     """版本胶囊：主题主色淡底 + 主色文字，圆角。"""
 
-    def __init__(self, text="V1.0", parent=None):
+    def __init__(self, text=APP_VERSION_DISPLAY, parent=None):
         super().__init__(parent)
         self._text = text
         f = self.font()
@@ -1900,7 +1904,7 @@ class SettingPage(FluentScrollArea):
         about_lay.addWidget(app_title, 0, Qt.AlignHCenter)
 
         # 版本徽标（居中胶囊）
-        pill = _AboutPill("V1.0", about_card)
+        pill = _AboutPill(APP_VERSION_DISPLAY, about_card)
         pill_row = QHBoxLayout()
         pill_row.setSpacing(4)
         pill_row.addStretch(1)
