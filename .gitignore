@@ -41,6 +41,8 @@ shot_*.py
 dns_check.py
 multi_verify.py
 _C_*.py
+_dbg_*.py
+_nb_*.py
 _capture_*.py
 _enum_*.py
 _fx_*.py
@@ -68,6 +70,9 @@ _2_*.py
 
 # ---------- 本地工作区数据 ----------
 .workbuddy/
+_edge_profile/
+_nb_profile/
+_nb_*.html
 
 # ---------- IDE / 编辑器 ----------
 .vscode/

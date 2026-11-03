@@ -6,7 +6,7 @@
 """
 
 # 版本号（单一来源：修改 APP_VERSION 即可，界面显示与 Release tag 均由此派生）
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 APP_VERSION_DISPLAY = "V" + APP_VERSION.rsplit(".", 1)[0]  # 如 "V1.0"
 
 import os
@@ -3163,75 +3163,15 @@ class MainWindow(FluentWindow):
             if hasattr(self, "tray") and self.tray:
                 self.tray.show()
 
-    # ---------- 原生事件（绕过 DWM HitTest 拦截，修复窗口拉伸） ----------
-    def nativeEvent(self, event_type, message):
-        """重写 nativeEvent，在 WA_TranslucentBackground 模式下强制处理 WM_NCHITTEST。
-
-        根因（诊断确认）：
-          WA_TranslucentBackground=True 时，DWM 会"代为处理"
-          鼠标 HitTest 并把所有客户区返回 HTCLIENT，导致 qframelesswindow 自带的
-          nativeEvent 收不到 WM_NCHITTEST、无法命中 HTLEFT/HTRIGHT/HTTOP 等拉伸区，
-          表现就是"窗口边缘 5px 无法拉伸"。
-        修复：在 nativeEvent 里自己解 MSG，对 WM_NCHITTEST 直接算鼠标相对客户区坐标，
-          命中扩展的 8px 边缘就返回拉伸 hit-test 码。其余消息交给 super()。
-        收益：
-          ① 8px 拉伸边界，比 qfw 默认 5px 更友好、不容易错过；
-          ② 不依赖 super() 是否处理，DWM 拦截也无效；
-          ③ 保留 qfw 对 WM_NCCALCSIZE / 最大化按钮区域的处理（通过 super 转发）。
-        """
-        try:
-            # PySide6: event_type = b"windows_generic_MSG" 或 QByteArray；message = sip.voidptr
-            et = bytes(event_type) if isinstance(event_type, (bytes, bytearray)) else event_type
-            if et in (b"windows_generic_MSG", "windows_generic_MSG", b"windows_generic", "windows_generic"):
-                # 用标准 MSG 结构解 message 指针（64-bit Win 下 MSG = 48 bytes）
-                class POINT(ctypes.Structure):
-                    _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
-                class MSG(ctypes.Structure):
-                    _fields_ = [
-                        ("hwnd", ctypes.c_void_p),
-                        ("message", ctypes.c_uint),
-                        ("wParam", ctypes.c_void_p),
-                        ("lParam", ctypes.c_void_p),
-                        ("time", ctypes.c_uint32),
-                        ("pt", POINT),
-                        ("lPrivate", ctypes.c_uint32),
-                    ]
-                msg = MSG.from_address(int(message))
-                if msg.message == 0x0084:  # WM_NCHITTEST
-                    lparam = int(msg.lParam) if hasattr(msg, "lParam") else 0
-                    # 屏幕坐标（lParam = MAKELPARAM(x, y)，x 是 LOWORD, y 是 HIWORD）
-                    x = lparam & 0xFFFF
-                    y = (lparam >> 16) & 0xFFFF
-                    # 转为客户区坐标：frameGeometry 给出的是带边框的窗口外框位置
-                    frame = self.frameGeometry()
-                    rx = x - frame.x()
-                    ry = y - frame.y()
-                    w, h = frame.width(), frame.height()
-                    # 排除：最大化/全屏时不拉伸（保持 qfw 默认行为）
-                    if self.isMaximized() or self.isFullScreen():
-                        return super().nativeEvent(event_type, message)
-                    # 8px 拉伸边界
-                    bw = 8
-                    lx = rx < bw
-                    rx_hit = rx > w - bw
-                    ty = ry < bw
-                    by = ry > h - bw
-                    # 角
-                    if lx and ty:     return True, 13   # HTTOPLEFT
-                    if rx_hit and ty: return True, 14   # HTTOPRIGHT
-                    if lx and by:     return True, 16   # HTBOTTOMLEFT
-                    if rx_hit and by: return True, 17   # HTBOTTOMRIGHT
-                    # 边
-                    if ty:      return True, 12         # HTTOP
-                    if by:      return True, 15         # HTBOTTOM
-                    if lx:      return True, 10         # HTLEFT
-                    if rx_hit:  return True, 11         # HTRIGHT
-                    # 客户区交给 super() 处理（titleBar 拖动、最大化按钮等）
-                    return super().nativeEvent(event_type, message)
-        except Exception:
-            pass
-        # 其余消息完全交给 qframelesswindow / qfluentwidgets 处理
-        return super().nativeEvent(event_type, message)
+    # ---------- 窗口拉伸：只由注入的 WndProc 处理（见 _install_resize_wnd_proc） ----------
+    # 【已移除】此处曾有一份 nativeEvent 覆写的 WM_NCHITTEST 命中测试。
+    # 该实现用 self.frameGeometry()（Qt 逻辑像素 / DIP）去减 WM_NCHITTEST
+    # lParam 里的物理屏幕像素，在 DPI 缩放 ≠ 100% 时产生系统性偏差：
+    #   rx 被放大 (scale-1)×frame.x()，而 w 用的是逻辑宽度（比物理宽度小 1/scale），
+    #   于是 rx > w-8 在窗口右侧提前成立 → 客户区被判成 HTRIGHT(11)，
+    #   鼠标变 ↔ 且点击被系统当成拖动边框（Win11 25H2 默认 125%/150% 缩放必现）。
+    # 现在命中测试只在 _install_resize_wnd_proc 的原生 WndProc 里做一次，
+    # 坐标统一取 GetWindowRect 物理像素，且不再返回结果覆盖 Qt 的处理链路。
 
     def _fix_titlebar_native(self):
         """修复 qframelesswindow titleBar 原生子窗口被 DWM 错位合成的问题。
@@ -3869,14 +3809,16 @@ class MainWindow(FluentWindow):
                 HTBOTTOMRIGHT = 17
                 HTTRANSPARENT = -1
 
-                # 边界宽度（与 nativeEvent 一致：8px 更友好）
-                BORDER_W = 8
+                # 边界宽度基准：逻辑 8px，实际按下文窗口 DPI 换算成物理像素
+                BORDER_W_BASE = 8
 
-                # 缓存主窗口矩形
+                # 缓存主窗口矩形（全部为 Win32 物理像素，与 WM_NCHITTEST 的
+                # lParam 同一坐标系，这是修复缩放错位的关键）
                 import threading
                 self._resize_lock = threading.Lock()
                 self._resize_state = {
                     "x": 0, "y": 0, "w": 0, "h": 0,
+                    "dpi": 96,
                     "maximized": False, "fullscreen": False,
                 }
                 self._refresh_resize_geometry()
@@ -3898,20 +3840,29 @@ class MainWindow(FluentWindow):
                         if h == main_ref._resize_hwnd and msg == WM_NCHITTEST:
                             with main_ref._resize_lock:
                                 st = main_ref._resize_state
-                            if st["maximized"] or st["fullscreen"]:
+                                x0, y0 = st["x"], st["y"]
+                                w, h2 = st["w"], st["h"]
+                                dpi = st.get("dpi", 96)
+                                skip_edge = st["maximized"] or st["fullscreen"]
+                            # 最大化/全屏不拉伸；几何尚未就绪（w/h 异常）时也必须交回 Qt，
+                            # 否则 w=0 会让 rx > w-bw 恒真，整个客户区被判成 HTRIGHT。
+                            if skip_edge or w <= 16 or h2 <= 16:
                                 return CallWindowProcW(
                                     main_ref._orig_wndproc, h, msg, wp, lp)
-                            x = lp & 0xFFFF
-                            y = (lp >> 16) & 0xFFFF
-                            with main_ref._resize_lock:
-                                rx = x - st["x"]
-                                ry = y - st["y"]
-                                w = st["w"]
-                                h2 = st["h"]
-                            lx = rx < BORDER_W
-                            rxr = rx > w - BORDER_W
-                            ty = ry < BORDER_W
-                            by = ry > h2 - BORDER_W
+                            # WM_NCHITTEST 的 lParam 是**有符号** short 打包的屏幕坐标
+                            # （GET_X_LPARAM == (int)(short)LOWORD），必须按 short 解；
+                            # 用 & 0xFFFF 无符号读，多显示器负坐标会变成 65000+，
+                            # rx 恒大于 w-bw，同样把整个客户区判成 HTRIGHT。
+                            x = ctypes.c_short(lp & 0xFFFF).value
+                            y = ctypes.c_short((lp >> 16) & 0xFFFF).value
+                            # 边界按 DPI 换算，保证视觉上恒定 8px（125%/150% 不再是 8 物理像素）
+                            bw = max(6, int(round(BORDER_W_BASE * dpi / 96.0)))
+                            rx = x - x0
+                            ry = y - y0
+                            lx = rx < bw
+                            rxr = rx > w - bw
+                            ty = ry < bw
+                            by = ry > h2 - bw
                             if lx and ty:   return HTTOPLEFT
                             if rxr and ty:  return HTTOPRIGHT
                             if lx and by:   return HTBOTTOMLEFT
@@ -4011,8 +3962,23 @@ class MainWindow(FluentWindow):
             class RECT(ctypes.Structure):
                 _fields_ = [('left', ctypes.c_long), ('top', ctypes.c_long),
                             ('right', ctypes.c_long), ('bottom', ctypes.c_long)]
+            # 显式声明签名，避免 64 位 HWND 被 ctypes 默认按 c_int 截断
+            user32.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(RECT)]
+            user32.GetWindowRect.restype = wintypes.BOOL
             r = RECT()
             user32.GetWindowRect(hwnd, ctypes.byref(r))
+
+            # 窗口当前 DPI（96 = 100%，120 = 125%，144 = 150%）。
+            # 边缘命中宽度要按它换算成物理像素，否则高缩放下 8 物理像素
+            # 只相当于视觉上的 5~6px，拉伸手感会变差。
+            dpi = 96
+            try:
+                GetDpiForWindow = user32.GetDpiForWindow   # Win10 1607+
+                GetDpiForWindow.argtypes = [wintypes.HWND]
+                GetDpiForWindow.restype = wintypes.UINT
+                dpi = int(GetDpiForWindow(hwnd)) or 96
+            except Exception:
+                dpi = 96
             # 最大化/全屏：用 GetWindowPlacement 判
             WPF_RESTORETOMAXIMIZED = 0x0002
             class WINDOWPLACEMENT(ctypes.Structure):
@@ -4025,6 +3991,8 @@ class MainWindow(FluentWindow):
                     ('rcNormalPosition', RECT),
                     ('rcDevice', RECT),
                 ]
+            user32.GetWindowPlacement.argtypes = [wintypes.HWND, ctypes.POINTER(WINDOWPLACEMENT)]
+            user32.GetWindowPlacement.restype = wintypes.BOOL
             wp = WINDOWPLACEMENT()
             wp.length = ctypes.sizeof(wp)
             user32.GetWindowPlacement(hwnd, ctypes.byref(wp))
@@ -4035,6 +4003,7 @@ class MainWindow(FluentWindow):
                 self._resize_state["y"] = r.top
                 self._resize_state["w"] = r.right - r.left
                 self._resize_state["h"] = r.bottom - r.top
+                self._resize_state["dpi"] = dpi
                 self._resize_state["maximized"] = is_max
                 self._resize_state["fullscreen"] = is_full
         except Exception:
